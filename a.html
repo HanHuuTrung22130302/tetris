@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.js"
+      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: white;
+        font-family: Arial, sans-serif;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      td {
+        height: 20px;
+        width: 20px;
+        border: solid 1px black;
+        text-align: center;
+      }
+      .snake {
+        background-color: green;
+      }
+      .rock {
+        background-color: gray;
+      }
+      .food {
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <table id="game"></table>
+    <button id="restart">Restart</button>
+  </body>
+  <script>
+    const snake = { list: [], way: 0 };
+    let food = [];
+    const rock = [];
+    const rows = 20;
+    const cols = 20;
+    let gameInterval;
+
+    $(document).ready(function () {
+      init();
+      randomFood();
+      randomRock();
+      gameInterval = setInterval(function () {
+        for (const d of snake.list) {
+          $("." + d.i + "-" + d.j).removeClass("snake");
+        }
+        for (let k = snake.list.length - 1; k > 0; k--) {
+            snake.list[k].i=snake.list[k-1].i;
+            snake.list[k].j=snake.list[k-1].j;
+        }
+
+        switch (snake.way) {
+          case 0:
+            snake.list[0].i--;
+            if (snake.list[0].i < 0) snake.list[0].i = 19;
+            break;
+          case 1:
+            snake.list[0].j++;
+            if (snake.list[0].j > 19) snake.list[0].j = 0;
+            break;
+          case 2:
+            snake.list[0].i++;
+            if (snake.list[0].i > 19) snake.list[0].i = 0;
+            break;
+          case 3:
+            snake.list[0].j--;
+            if (snake.list[0].j < 0) snake.list[0].j = 19;
+            break;
+        }
+        if (snake.list[0].i == food[0].i && snake.list[0].j == food[0].j) {
+          $("." + food[0].i + "-" + food[0].j).removeClass("food");
+          food = [];
+          updateSnake();
+          randomFood();
+        }
+        checkDie();
+        for (const d of snake.list) {
+          $("." + d.i + "-" + d.j).addClass("snake");
+        }
+      }, 200);
+    });
+
+    function init() {
+      for (let i = 0; i < rows; i++) {
+        let tr = $("<tr>");
+        for (let j = 0; j < cols; j++) {
+          let td = $("<td>");
+          td.addClass(i + "-" + j);
+          tr.append(td);
+        }
+        $("#game").append(tr);
+      }
+      let x = parseInt(Math.random() * 20);
+      let y = parseInt(Math.random() * 20);
+      snake.list.push({ i: x, j: y });
+      $("." + x + "-" + y).addClass("snake");
+    }
+    function randomFood() {
+      let x = parseInt(Math.random() * 20);
+      let y = parseInt(Math.random() * 20);
+      food.push({ i: x, j: y });
+      $("." + x + "-" + y).addClass("food");
+    }
+    function randomRock() {
+      for (let i = 0; i < 5; i++) {
+        let x = parseInt(Math.random() * 20);
+        let y = parseInt(Math.random() * 20);
+        rock.push({ i: x, j: y });
+        $("." + x + "-" + y).addClass("rock");
+      }
+    }
+
+    function checkDie() {
+      for (let k = snake.list.length - 1; k > 0; k--) {
+        if (
+          snake.list[0].i === snake.list[k].i &&
+          snake.list[0].j === snake.list[k].j
+        ) {
+          clearInterval(gameInterval);
+          alert("game over");
+        }
+      }
+      for (const d of rock) {
+        if (snake.list[0].i === d.i && snake.list[0].j === d.j) {
+          clearInterval(gameInterval);
+          alert("game over");
+        }
+      }
+    }
+
+    function updateSnake() {
+      const last = snake.list[snake.list.length - 1];
+      const newP = { i: last.i, j: last.j };
+      switch (snake.way) {
+        case 0:
+          newP.i++;
+          if (newP.i > 19) newP.i = 0;
+          break;
+        case 1:
+          newP.j--;
+          if (newP.j < 0) newP.j = 19;
+          break;
+        case 2:
+          newP.i--;
+          if (newP.i < 0) newP.i = 19;
+          break;
+        case 3:
+          newP.j++;
+          if (newP.j > 19) newP.j = 0;
+          break;
+      }
+      snake.list.push(newP);
+    }
+
+    $("body").keypress(function (event) {
+      console.log(event.keyCode);
+      switch (event.keyCode) {
+        case 119:
+          if (snake.way === 2) break;
+          snake.way = 0;
+          break;
+        case 100:
+          if (snake.way === 3) break;
+          snake.way = 1;
+          break;
+        case 115:
+          if (snake.way === 0) break;
+          snake.way = 2;
+          break;
+        case 97:
+          if (snake.way === 1) break;
+          snake.way = 3;
+          break;
+      }
+    });
+    $("#restart").click(()=> location.reload());
+  </script>
+</html>

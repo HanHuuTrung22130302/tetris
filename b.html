@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.js"
+      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      td {
+        width: 30px;
+        height: 30px;
+        border: 1px solid #aaa;
+      }
+      .block {
+        background-color: #3498db;
+      }
+      .fixed {
+        background-color: #2ecc71;
+      }
+      h2 {
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Tetris Table Game</h2>
+    <table id="game"></table>
+    <button id="restart">restart</button>
+  </body>
+  <script>
+    const rows = 15;
+    const cols = 10;
+    let shape;
+    let pos;
+    let grid = [];
+    let gameInterval;
+    const shapes = [
+      [[1, 1, 1, 1]],
+      [
+        [1, 1],
+        [1, 1],
+      ],
+      [
+        [1, 1, 0],
+        [0, 1, 1],
+      ],
+      [
+        [0, 1, 1],
+        [1, 1, 0],
+      ],
+      [
+        [0, 1, 0],
+        [1, 1, 1],
+      ],
+    ];
+
+    $(document).ready(function () {
+      init();
+      spawnNewBlock();
+      drawBlock();
+      gameInterval = setInterval(fall, 500); //fall chứ ko phải fall()
+    });
+
+    $("body").keypress(function (e) {
+      switch (e.keyCode) {
+        case 119:
+          rotateShape();
+          break;
+        case 100:
+          if (canMove(0, 1)) pos.j++;
+          break;
+        case 115:
+          if (canMove(1, 0)) pos.i++;
+          break;
+        case 97:
+          if (canMove(0, -1)) pos.j--;
+          break;
+      }
+      drawBlock();
+    });
+
+    function spawnNewBlock() {
+      shape = shapes[Math.floor(Math.random() * shapes.length)];
+      pos = { i: 0, j: Math.floor((cols - shape[0].length) / 2) };
+      if(!canMove(0,0)){
+        clearInterval(gameInterval);
+        alert("game over");
+      }
+    }
+
+    function init() {
+      for (let i = 0; i < rows; i++) {
+        let tr = $("<tr>");
+        grid[i] = [];
+        for (let j = 0; j < cols; j++) {
+          let td = $("<td>");
+          td.addClass(i + "-" + j);
+          tr.append(td);
+          grid[i][j] = 0;
+        }
+        $("#game").append(tr);
+      }
+    }
+
+    function drawBlock() {
+      $("td").removeClass("block fixed");
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          if (grid[i][j] === 1) {
+            $("." + i + "-" + j).addClass("fixed");
+          }
+        }
+      }
+
+      for (let i = 0; i < shape.length; i++) {
+        for (let j = 0; j < shape[0].length; j++) {
+          if (shape[i][j] === 1) {
+            let x = pos.i + i;
+            let y = pos.j + j;
+            $("." + x + "-" + y).addClass("block");
+          }
+        }
+      }
+    }
+
+    function fall() {
+      if (canMove(1, 0)) {
+        pos.i++;
+      } else {
+        fixToGrid();
+        clearLine();
+        spawnNewBlock();
+      }
+      drawBlock();
+    }
+
+    function fixToGrid() {
+      for (let i = 0; i < shape.length; i++) {
+        for (let j = 0; j < shape[0].length; j++) {
+          if (shape[i][j] === 1) {
+            let x = pos.i + i;
+            let y = pos.j + j;
+            grid[x][y] = 1;
+          }
+        }
+      }
+    }
+
+    function canMove(dx, dy) {
+      for (let i = 0; i < shape.length; i++) {
+        for (let j = 0; j < shape[0].length; j++) {
+          if (shape[i][j] === 1) {
+            let x = pos.i + i + dx;
+            let y = pos.j + j + dy;
+            if (x < 0 || y < 0 || x >= rows || y >= cols) return false;
+            if (grid[x][y] === 1) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function clearLine() {
+      for (let k = rows - 1; k > 0; k--) {
+        if (grid[k].every((cell) => cell === 1)) {
+          grid.splice(k, 1);
+          grid.unshift(Array(cols).fill(0));
+          k++;
+        }
+      }
+    }
+    function rotateShape() {
+      const newShape = [];
+      for (let i = 0; i < shape[0].length; i++) {
+        let newRow = [];
+        for (let j = shape.length - 1; j >= 0; j--) { //luu y >= 0
+          newRow.push(shape[j][i]);
+        }
+        newShape.push(newRow);
+      }
+      const oldShape = shape;
+      shape = newShape;
+      if (!canMove(0, 0)) shape = oldShape;
+      drawBlock();
+    }
+
+    $("#restart").click(()=> location.reload());
+  </script>
+</html>

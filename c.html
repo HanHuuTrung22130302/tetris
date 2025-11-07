@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pikachu Matching Game 🧩</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background: #f0f0f0;
+      }
+      h1 {
+        margin-top: 15px;
+      }
+      #timer {
+        font-size: 20px;
+        margin: 10px;
+        color: #333;
+      }
+      table {
+        border-collapse: collapse;
+        margin: 20px auto;
+      }
+      td {
+        width: 60px;
+        height: 60px;
+        border: 1px solid #999;
+        background-color: white;
+      }
+      td img {
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+      td.selected {
+        background-color: yellow;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🐱 Pikachu Matching Game</h1>
+    <div id="timer">⏱ Thời gian: <span id="time">60</span> giây</div>
+    <table id="board"></table>
+
+    <script>
+      const ROWS = 8,
+        COLS = 10;
+      let board = [];
+      let first = null;
+      let second = null;
+      let timeLeft = 60;
+      let timer;
+
+      // Danh sách hình ảnh
+      const icons = [
+        "1.jpg",
+        "https://cdn.pixabay.com/photo/2023/07/08/09/53/monastery-8114076_1280.jpg",
+        "https://cdn.pixabay.com/photo/2020/01/10/19/21/mont-saint-michel-4756046_1280.jpg",
+        "https://cdn.pixabay.com/photo/2025/10/30/18/34/locomotive-9927634_1280.jpg",
+        "https://cdn.pixabay.com/photo/2012/10/25/23/18/train-62849_1280.jpg",
+        "https://cdn.pixabay.com/photo/2025/06/27/07/30/clownfish-9683275_1280.jpg",
+        "https://cdn.pixabay.com/photo/2016/08/19/09/32/anemone-1604872_1280.jpg",
+        "https://cdn.pixabay.com/photo/2016/09/01/01/43/little-boy-1635065_1280.jpg",
+      ];
+
+      // // Kiểm tra ô trống
+      function isEmpty(i, j) {
+        if (i < 0 || j < 0 || i >= ROWS || j >= COLS) return true;
+        return !board[i][j] || !board[i][j].find("img").length;
+      }
+
+      // Kiểm tra có đường nối
+      function canConnect(i1, j1, i2, j2) {
+        const lineClear = (x1, y1, x2, y2) => {
+          if (x1 === x2) {
+            for (let y = Math.min(y1, y2) + 1; y < Math.max(y1, y2); y++)
+              if (!isEmpty(x1, y)) return false;
+            return true;
+          }
+          if (y1 === y2) {
+            for (let x = Math.min(x1, x2) + 1; x < Math.max(x1, x2); x++)
+              if (!isEmpty(x, y1)) return false;
+            return true;
+          }
+          return false;
+        };
+
+        if ((i1 === i2 || j1 === j2) && lineClear(i1, j1, i2, j2)) return true;
+
+        if (isEmpty(i1, j2) && lineClear(i1, j1, i1, j2) && lineClear(i1, j2, i2, j2)) return true;
+        if (isEmpty(i2, j1) && lineClear(i1, j1, i2, j1) && lineClear(i2, j1, i2, j2)) return true;
+
+        for (let x = -1; x <= ROWS; x++) {
+          if ((x < 0 || x >= ROWS || isEmpty(x, j1)) &&
+              (x < 0 || x >= ROWS || isEmpty(x, j2)) &&
+              lineClear(x, j1, i1, j1) &&
+              lineClear(x, j2, i2, j2) &&
+              lineClear(x, j1, x, j2)) return true;
+        }
+
+        for (let y = -1; y <= COLS; y++) {
+          if ((y < 0 || y >= COLS || isEmpty(i1, y)) &&
+              (y < 0 || y >= COLS || isEmpty(i2, y)) &&
+              lineClear(i1, y, i1, j1) &&
+              lineClear(i2, y, i2, j2) &&
+              lineClear(i1, y, i2, y)) return true;
+        }
+
+        return false;
+      }
+      // --------------------------------------------------------------------------------
+
+      // Xử lý click
+      function cellClick() {
+        const $cell = $(this);
+        if (!$cell.find("img").length) return;
+
+        if (!first) {
+          first = $cell.addClass("selected");
+        } else if (!second) {
+          second = $cell.addClass("selected");
+          if (first.is(second)) return;
+
+          if (first.data("img") === second.data("img")) {
+            const i1 = first.data("i"),
+              j1 = first.data("j");
+            const i2 = second.data("i"),
+              j2 = second.data("j");
+
+            if (canConnect(i1, j1, i2, j2)) {
+              first.empty();
+              second.empty();
+              board[i1][j1] = null;
+              board[i2][j2] = null;
+              resetSelection();
+
+              if (!$("#board img").length) {
+                clearInterval(timer);
+                setTimeout(() => alert("🎉 Bạn đã thắng!"), 200);
+              }
+            } else {
+              setTimeout(resetSelection, 400);
+            }
+          } else {
+            setTimeout(resetSelection, 400);
+          }
+        }
+      }
+
+      // Reset chọn
+      function resetSelection() {
+        if (first) first.removeClass("selected");
+        if (second) second.removeClass("selected");
+        first = second = null;
+      }
+
+      // --------------------------------------------------------------------------------
+
+      // Trộn mảng
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      // Khởi tạo bảng
+      function createBoard() {
+        $("#board").empty();
+        board = [];
+
+        let pairs = [];
+        for (let i = 0; i < (ROWS * COLS) / 2; i++) {
+          pairs.push(icons[i % icons.length]);
+          pairs.push(icons[i % icons.length]);
+        }
+        shuffle(pairs);
+
+        for (let i = 0; i < ROWS; i++) {
+          const tr = $("<tr>");
+          board[i] = [];
+          for (let j = 0; j < COLS; j++) {
+            const imgSrc = pairs[i * COLS + j];
+            const td = $("<td>").data({ i, j, img: imgSrc });
+            const img = $("<img>").attr("src", imgSrc);
+            td.append(img).on("click", cellClick);
+            tr.append(td);
+            board[i][j] = td;
+          }
+          $("#board").append(tr);
+        }
+      }
+
+      // Bộ đếm thời gian
+      function startTimer() {
+        clearInterval(timer);
+        timeLeft = 5;
+        $("#time").text(timeLeft);
+
+        timer = setInterval(() => {
+          timeLeft--;
+          $("#time").text(timeLeft);
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            alert("⏰ Hết giờ! Thử lại nhé!");
+            createBoard();
+            startTimer();
+          }
+        }, 1000);
+      }
+
+      // Khởi chạy game
+      $(document).ready(() => {
+        createBoard();
+        startTimer();
+      });
+    </script>
+  </body>
+</html>
